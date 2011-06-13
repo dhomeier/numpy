@@ -191,9 +191,9 @@ class TestDateTime(TestCase):
         assert_equal(np.array('1601', dtype='M8[D]').astype('i8'),
                 (1600-1970)*365 - (1972-1600)/4 + 3 + 366)
         assert_equal(np.array('1900', dtype='M8[D]').astype('i8'),
-                (1900-1970)*365 - (1970-1900)/4)
+                (1900-1970)*365 - (1970-1900)//4)
         assert_equal(np.array('1901', dtype='M8[D]').astype('i8'),
-                (1900-1970)*365 - (1970-1900)/4 + 365)
+                (1900-1970)*365 - (1970-1900)//4 + 365)
         assert_equal(np.array('1967', dtype='M8[D]').astype('i8'), -3*365 - 1)
         assert_equal(np.array('1968', dtype='M8[D]').astype('i8'), -2*365 - 1)
         assert_equal(np.array('1969', dtype='M8[D]').astype('i8'), -1*365)
@@ -203,24 +203,24 @@ class TestDateTime(TestCase):
         assert_equal(np.array('1973', dtype='M8[D]').astype('i8'), 3*365 + 1)
         assert_equal(np.array('1974', dtype='M8[D]').astype('i8'), 4*365 + 1)
         assert_equal(np.array('2000', dtype='M8[D]').astype('i8'),
-                 (2000 - 1970)*365 + (2000 - 1972)/4)
+                 (2000 - 1970)*365 + (2000 - 1972)//4)
         assert_equal(np.array('2001', dtype='M8[D]').astype('i8'),
-                 (2000 - 1970)*365 + (2000 - 1972)/4 + 366)
+                 (2000 - 1970)*365 + (2000 - 1972)//4 + 366)
         assert_equal(np.array('2400', dtype='M8[D]').astype('i8'),
-                 (2400 - 1970)*365 + (2400 - 1972)/4 - 3)
+                 (2400 - 1970)*365 + (2400 - 1972)//4 - 3)
         assert_equal(np.array('2401', dtype='M8[D]').astype('i8'),
-                 (2400 - 1970)*365 + (2400 - 1972)/4 - 3 + 366)
+                 (2400 - 1970)*365 + (2400 - 1972)//4 - 3 + 366)
 
         assert_equal(np.array('1600-02-29', dtype='M8[D]').astype('i8'),
-                (1600-1970)*365 - (1972-1600)/4 + 3 + 31 + 28)
+                (1600-1970)*365 - (1972-1600)//4 + 3 + 31 + 28)
         assert_equal(np.array('1600-03-01', dtype='M8[D]').astype('i8'),
-                (1600-1970)*365 - (1972-1600)/4 + 3 + 31 + 29)
+                (1600-1970)*365 - (1972-1600)//4 + 3 + 31 + 29)
         assert_equal(np.array('2000-02-29', dtype='M8[D]').astype('i8'),
-                 (2000 - 1970)*365 + (2000 - 1972)/4 + 31 + 28)
+                 (2000 - 1970)*365 + (2000 - 1972)//4 + 31 + 28)
         assert_equal(np.array('2000-03-01', dtype='M8[D]').astype('i8'),
-                 (2000 - 1970)*365 + (2000 - 1972)/4 + 31 + 29)
+                 (2000 - 1970)*365 + (2000 - 1972)//4 + 31 + 29)
         assert_equal(np.array('2001-03-22', dtype='M8[D]').astype('i8'),
-                 (2000 - 1970)*365 + (2000 - 1972)/4 + 366 + 31 + 28 + 21)
+                 (2000 - 1970)*365 + (2000 - 1972)//4 + 366 + 31 + 28 + 21)
 
     def test_days_to_pydate(self):
         assert_equal(np.array('1599', dtype='M8[D]').astype('O'),
@@ -878,119 +878,120 @@ class TestDateTime(TestCase):
         date = '1959-10-13T12:34:56.789012345678901234Z'
 
         assert_equal(np.datetime_as_string(np.datetime64(date, 'Y')),
-                     '1959')
+                     asbytes('1959'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'M')),
-                     '1959-10')
+                     asbytes('1959-10'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'D')),
-                     '1959-10-13')
+                     asbytes('1959-10-13'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'h')),
-                     '1959-10-13T12Z')
+                     asbytes('1959-10-13T12Z'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'm')),
-                     '1959-10-13T12:34Z')
+                     asbytes('1959-10-13T12:34Z'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 's')),
-                     '1959-10-13T12:34:56Z')
+                     asbytes('1959-10-13T12:34:56Z'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'ms')),
-                     '1959-10-13T12:34:56.789Z')
+                     asbytes('1959-10-13T12:34:56.789Z'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'us')),
-                     '1959-10-13T12:34:56.789012Z')
+                     asbytes('1959-10-13T12:34:56.789012Z'))
 
         date = '1969-12-31T23:34:56.789012345678901234Z'
 
         assert_equal(np.datetime_as_string(np.datetime64(date, 'ns')),
-                     '1969-12-31T23:34:56.789012345Z')
+                     asbytes('1969-12-31T23:34:56.789012345Z'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'ps')),
-                     '1969-12-31T23:34:56.789012345678Z')
+                     asbytes('1969-12-31T23:34:56.789012345678Z'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'fs')),
-                     '1969-12-31T23:34:56.789012345678901Z')
+                     asbytes('1969-12-31T23:34:56.789012345678901Z'))
 
         date = '1969-12-31T23:59:57.789012345678901234Z'
 
         assert_equal(np.datetime_as_string(np.datetime64(date, 'as')),
-                     date);
+                     asbytes(date));
         date = '1970-01-01T00:34:56.789012345678901234Z'
 
         assert_equal(np.datetime_as_string(np.datetime64(date, 'ns')),
-                     '1970-01-01T00:34:56.789012345Z')
+                     asbytes('1970-01-01T00:34:56.789012345Z'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'ps')),
-                     '1970-01-01T00:34:56.789012345678Z')
+                     asbytes('1970-01-01T00:34:56.789012345678Z'))
         assert_equal(np.datetime_as_string(np.datetime64(date, 'fs')),
-                     '1970-01-01T00:34:56.789012345678901Z')
+                     asbytes('1970-01-01T00:34:56.789012345678901Z'))
 
         date = '1970-01-01T00:00:05.789012345678901234Z'
 
         assert_equal(np.datetime_as_string(np.datetime64(date, 'as')),
-                     date);
+                     asbytes(date));
 
         # String conversion with the unit= parameter
         a = np.datetime64('2032-07-18T12:23:34.123456Z', 'us')
-        assert_equal(np.datetime_as_string(a, unit='Y'), '2032')
-        assert_equal(np.datetime_as_string(a, unit='M'), '2032-07')
-        assert_equal(np.datetime_as_string(a, unit='W'), '2032-07-18')
-        assert_equal(np.datetime_as_string(a, unit='D'), '2032-07-18')
-        assert_equal(np.datetime_as_string(a, unit='h'), '2032-07-18T12Z')
+        assert_equal(np.datetime_as_string(a, unit='Y'), asbytes('2032'))
+        assert_equal(np.datetime_as_string(a, unit='M'), asbytes('2032-07'))
+        assert_equal(np.datetime_as_string(a, unit='W'), asbytes('2032-07-18'))
+        assert_equal(np.datetime_as_string(a, unit='D'), asbytes('2032-07-18'))
+        assert_equal(np.datetime_as_string(a, unit='h'),
+                            asbytes('2032-07-18T12Z'))
         assert_equal(np.datetime_as_string(a, unit='m'),
-                            '2032-07-18T12:23Z')
+                            asbytes('2032-07-18T12:23Z'))
         assert_equal(np.datetime_as_string(a, unit='s'),
-                            '2032-07-18T12:23:34Z')
+                            asbytes('2032-07-18T12:23:34Z'))
         assert_equal(np.datetime_as_string(a, unit='ms'),
-                            '2032-07-18T12:23:34.123Z')
+                            asbytes('2032-07-18T12:23:34.123Z'))
         assert_equal(np.datetime_as_string(a, unit='us'),
-                            '2032-07-18T12:23:34.123456Z')
+                            asbytes('2032-07-18T12:23:34.123456Z'))
         assert_equal(np.datetime_as_string(a, unit='ns'),
-                            '2032-07-18T12:23:34.123456000Z')
+                            asbytes('2032-07-18T12:23:34.123456000Z'))
         assert_equal(np.datetime_as_string(a, unit='ps'),
-                            '2032-07-18T12:23:34.123456000000Z')
+                            asbytes('2032-07-18T12:23:34.123456000000Z'))
         assert_equal(np.datetime_as_string(a, unit='fs'),
-                            '2032-07-18T12:23:34.123456000000000Z')
+                            asbytes('2032-07-18T12:23:34.123456000000000Z'))
         assert_equal(np.datetime_as_string(a, unit='as'),
-                            '2032-07-18T12:23:34.123456000000000000Z')
+                            asbytes('2032-07-18T12:23:34.123456000000000000Z'))
 
         # unit='auto' parameter
         assert_equal(np.datetime_as_string(
                             np.datetime64('2032-07-18T12:23:34.123456Z', 'us'),
                                             unit='auto'),
-                            '2032-07-18T12:23:34.123456Z')
+                            asbytes('2032-07-18T12:23:34.123456Z'))
         assert_equal(np.datetime_as_string(
                             np.datetime64('2032-07-18T12:23:34.12Z', 'us'),
                                             unit='auto'),
-                            '2032-07-18T12:23:34.120Z')
+                            asbytes('2032-07-18T12:23:34.120Z'))
         assert_equal(np.datetime_as_string(
                             np.datetime64('2032-07-18T12:23:34Z', 'us'),
                                             unit='auto'),
-                            '2032-07-18T12:23:34Z')
+                            asbytes('2032-07-18T12:23:34Z'))
         assert_equal(np.datetime_as_string(
                             np.datetime64('2032-07-18T12:23:00Z', 'us'),
                                             unit='auto'),
-                            '2032-07-18T12:23Z')
+                            asbytes('2032-07-18T12:23Z'))
         # 'auto' doesn't split up hour and minute
         assert_equal(np.datetime_as_string(
                             np.datetime64('2032-07-18T12:00:00Z', 'us'),
                                             unit='auto'),
-                            '2032-07-18T12:00Z')
+                            asbytes('2032-07-18T12:00Z'))
         assert_equal(np.datetime_as_string(
                             np.datetime64('2032-07-18T00:00:00Z', 'us'),
                                             unit='auto'),
-                            '2032-07-18')
+                            asbytes('2032-07-18'))
         # 'auto' doesn't split up the date
         assert_equal(np.datetime_as_string(
                             np.datetime64('2032-07-01T00:00:00Z', 'us'),
                                             unit='auto'),
-                            '2032-07-01')
+                            asbytes('2032-07-01'))
         assert_equal(np.datetime_as_string(
                             np.datetime64('2032-01-01T00:00:00Z', 'us'),
                                             unit='auto'),
-                            '2032-01-01')
+                            asbytes('2032-01-01'))
 
         # local=True
         a = np.datetime64('2010-03-15T06:30Z', 'm')
         assert_(np.datetime_as_string(a, local=True) != '2010-03-15T6:30Z')
         # local=True with tzoffset
         assert_equal(np.datetime_as_string(a, local=True, tzoffset=-60),
-                     '2010-03-15T05:30-0100')
+                     asbytes('2010-03-15T05:30-0100'))
         assert_equal(np.datetime_as_string(a, local=True, tzoffset=+30),
-                     '2010-03-15T07:00+0030')
+                     asbytes('2010-03-15T07:00+0030'))
         assert_equal(np.datetime_as_string(a, local=True, tzoffset=-5*60),
-                     '2010-03-15T01:30-0500')
+                     asbytes('2010-03-15T01:30-0500'))
 
 class TestDateTimeData(TestCase):
 
