@@ -57,14 +57,14 @@ class TestArray2String(TestCase):
     def test_basic(self):
         """Basic test of array2string."""
         a = np.arange(3)
-        assert_(np.array2string(a) == '[0 1 2]')
-        assert_(np.array2string(a, max_line_width=4) == '[0 1\n 2]')
+        assert_equal(np.array2string(a), '[0 1 2]')
+        assert_equal(np.array2string(a, max_line_width=4), '[0 1\n 2]')
 
     def test_style_keyword(self):
         """This should only apply to 0-D arrays. See #1218."""
         stylestr = np.array2string(np.array(1.5),
                                    style=lambda x: "Value in 0-D array: " + str(x))
-        assert_(stylestr == 'Value in 0-D array: 1.5')
+        assert_equal(stylestr, 'Value in 0-D array: 1.5')
 
     def test_format_function(self):
         """Test custom format function for each element in array."""
@@ -76,23 +76,28 @@ class TestArray2String(TestCase):
             else:
                 return 'O'
         x = np.arange(3)
-        assert_(np.array2string(x, formatter={'all':_format_function}) == \
+        assert_equal(np.array2string(x, formatter={'all':_format_function}), \
                 "[. o O]")
-        assert_(np.array2string(x, formatter={'int_kind':_format_function}) ==\
-                "[. o O]")
-        assert_(np.array2string(x, formatter={'all':lambda x: "%.4f" % x}) == \
+        assert_equal(np.array2string(x, \
+                    formatter={'int_kind':_format_function}), "[. o O]")
+        assert_equal(np.array2string(x, \
+                    formatter={'all':lambda x: "%.4f" % x}), \
                 "[0.0000 1.0000 2.0000]")
         assert_equal(np.array2string(x, formatter={'int':lambda x: hex(x)}), \
                 "[0x0L 0x1L 0x2L]")
+        assert_equal(np.array2string(x, formatter={'int':lambda x: oct(x)}), \
+                "[0L 01L 02L]")
 
         x = np.arange(3.)
-        assert_(np.array2string(x, formatter={'float_kind':lambda x: "%.2f" % x}) == \
+        assert_equal(np.array2string(x, \
+                    formatter={'float_kind':lambda x: "%.2f" % x}), \
                 "[0.00 1.00 2.00]")
-        assert_(np.array2string(x, formatter={'float':lambda x: "%.2f" % x}) == \
+        assert_equal(np.array2string(x, \
+                    formatter={'float':lambda x: "%.2f" % x}), \
                 "[0.00 1.00 2.00]")
 
         s = np.array(['abc', 'def'])
-        assert_(np.array2string(s, formatter={'numpystr':lambda s: s*2}) == \
+        assert_equal(np.array2string(s, formatter={'numpystr':lambda s: s*2}), \
             '[abcabc defdef]')
 
 

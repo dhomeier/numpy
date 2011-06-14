@@ -8,9 +8,11 @@ class TestReturnCharacter(util.F2PyTest):
         tname = t.__doc__.split()[0]
         if tname in ['t0','t1','s0','s1']:
             assert_( t(23)==asbytes('2'))
-            r = t('ab');assert_( r==asbytes('a'),`r`)
-            r = t(array('ab'));assert_( r==asbytes('a'),`r`)
-            r = t(array(77,'u1'));assert_( r==asbytes('M'),`r`)
+            r = t('ab');assert_( r==asbytes('a'), "%s('ab')=%s"%(tname,`r`))
+            r = t(array('ab'));assert_( r==asbytes('a'), \
+                                      "%s(array('ab'))=%s"%(tname,`r`))
+            r = t(array(77,'u1'));assert_( r==asbytes('M'), \
+                                         "%s(array(77,'u1'))=%s"%(tname,`r`))
             #assert_(_raises(ValueError, t, array([77,87])))
             #assert_(_raises(ValueError, t, array(77)))
         elif tname in ['ts','ss']:
