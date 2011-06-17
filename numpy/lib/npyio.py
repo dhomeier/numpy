@@ -614,7 +614,9 @@ def loadtxt(fname, dtype=float, comments='#', delimiter=None,
         that column to a float.  E.g., if column 0 is a date string:
         ``converters = {0: datestr2num}``.  Converters can also be used to
         provide a default value for missing data (but see also `genfromtxt`):
-        ``converters = {3: lambda s: float(s.strip() or 0)}``.  Default: None.
+        ``converters = {3: lambda s: float(s.strip() or 0)}``. When containing
+        a single key -1 or `all` this will be applied to all columns:
+        ``converters = {-1: lambda s: s.replace('D','E')}``. Default: None.
     skiprows : int, optional
         Skip the first `skiprows` lines; default: 0.
     usecols : sequence, optional
@@ -672,7 +674,7 @@ def loadtxt(fname, dtype=float, comments='#', delimiter=None,
     """
     # Type conversions for Py3 convenience
     comments = asbytes(comments)
-    user_converters = converters
+    user_converters = converters or {}
     if delimiter is not None:
         delimiter = asbytes(delimiter)
     if usecols is not None:
@@ -777,7 +779,12 @@ def loadtxt(fname, dtype=float, comments='#', delimiter=None,
                 packing = [(N, tuple)]
 
         # By preference, use the converters specified by the user
-        for i, conv in (user_converters or {}).iteritems():
+        #   for the special case { -1: conv } use conv for every column:
+        if user_converters.keys() in ([-1], ['all']):
+            conv = user_converters.values()[0]
+            user_converters = dict.fromkeys(range(N), conv)
+            
+        for i, conv in user_converters.iteritems():
             if usecols:
                 try:
                     i = usecols.index(i)
@@ -1111,6 +1118,8 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
         The set of functions that convert the data of a column to a value.
         The converters can also be used to provide a default value
         for missing data: ``converters = {3: lambda s: float(s or 0)}``.
+        When containing a single key -1 or `all` this will be applied to all
+        columns: ``converters = {-1: lambda s: float(s.replace('D','E'))}``.
     missing_values : variable, optional
         The set of strings corresponding to missing data.
     filling_values : variable, optional
@@ -1449,6 +1458,11 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
                                           missing_values=miss, default=fill)
                           for (miss, fill) in zipit]
     # Update the converters to use the user-defined ones
+    #   for the special case { -1: conv } use conv for every column:
+    if user_converters.keys() in ([-1], ['all']):
+        conv = user_converters.values()[0]
+        user_converters = dict.fromkeys(range(len(converters)), conv)
+            
     uc_update = []
     for (i, conv) in user_converters.items():
         # If the converter is specified by column names, use the index instead
