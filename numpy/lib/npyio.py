@@ -574,8 +574,11 @@ def _getconv(dtype):
         return lambda x: int(float(x))
     elif issubclass(typ, np.floating):
         return float
-    elif issubclass(typ, np.complex):
-        return complex
+    elif issubclass(typ, np.complexfloating):
+        if sys.version_info[0] < 3:
+            return complex
+        else:
+            return lambda x: complex(asstr(x))
     elif issubclass(typ, np.bytes_):
         return bytes
     else:
@@ -809,7 +812,11 @@ def loadtxt(fname, dtype=float, comments='#', delimiter=None,
         if fown:
             fh.close()
 
-    X = np.array(X, dtype)
+    try:
+        X = np.array(X, dtype)
+    except TypeError:
+        raise TypeError("Could not convert input array to %s: " % dtype)
+    
     # Multicolumn data are returned with shape (1, N, M), i.e. 
     # (1, 1, M) for a single row - remove the singleton dimension there
     if X.ndim == 3 and X.shape[:2] == (1, 1):

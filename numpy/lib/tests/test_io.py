@@ -443,6 +443,18 @@ class TestLoadTxt(TestCase):
         res = np.loadtxt(c, dtype=np.int64)
         assert_equal(res, tgt)
 
+    def test_complex_type(self):
+        tgt = np.array(((-1.1318-2.5693j,1.8585+1.5502j), (1+0j,0.0+1.733j)))
+        c = StringIO("-1.1318-2.5693j 1.8585+1.5502j \n 1+0j 0.0+1.733j")
+        res = np.loadtxt(c, dtype=complex)
+        assert_equal(res, tgt)
+        c.seek(0)
+        res = np.loadtxt(c, dtype=np.complex64)
+        assert_equal(res, tgt.astype(np.complex64))
+        c.seek(0)
+        res = np.loadtxt(c, dtype=np.complex256)
+        assert_equal(res, tgt.astype(np.complex256))
+
     def test_universal_newline(self):
         f, name = mkstemp()
         os.write(f, asbytes('1 21\r3 42\r'))
@@ -1191,6 +1203,49 @@ M   33  21.99
         ctrl = np.array([('01/01/2003', 1.3, 'abcde')],
                         dtype=[('f0', '|S10'), ('f1', float), ('f2', '|S5')])
         assert_equal(mtest, ctrl)
+
+    def test_dtype_with_object(self):
+        "Test using an explicit dtype with an object"
+        from datetime import date
+        import time
+        data = asbytes(""" 1; 2001-01-01
+                           2; 2002-01-31 """)
+        ndtype = [('idx', int), ('code', np.object)]
+        func = lambda s: strptime(s.strip(), "%Y-%m-%d")
+        converters = {1: func}
+        test = np.genfromtxt(StringIO(data), delimiter=";", dtype=ndtype,
+                             converters=converters)
+        control = np.array([(1, datetime(2001, 1, 1)), (2, datetime(2002, 1, 31))],
+                           dtype=ndtype)
+        assert_equal(test, control)
+
+    def test_uint64_type(self):
+        tgt = (9223372043271415339, 9223372043271415853)
+        c = StringIO()
+        c.write(asbytes("%s %s" % tgt))
+        c.seek(0)
+        res = np.genfromtxt(c, dtype=np.uint64)
+        assert_equal(res, tgt)
+
+    def test_int64_type(self):
+        tgt = (-9223372036854775807, 9223372036854775807)
+        c = StringIO()
+        c.write(asbytes("%s %s" % tgt))
+        c.seek(0)
+        res = np.genfromtxt(c, dtype=np.int64)
+        assert_equal(res, tgt)
+
+    def test_complex_type(self):
+        tgt = np.array(((-1.1318-2.5693j,1.8585+1.5502j), (1+0j,0.0+1.733j)))
+        c = StringIO("-1.1318-2.5693j 1.8585+1.5502j \n 1+0j 0.0+1.733j")
+        res = np.genfromtxt(c, dtype=complex)
+        assert_equal(res, tgt)
+        c.seek(0)
+        res = np.genfromtxt(c, dtype=np.complex64)
+        assert_equal(res, tgt.astype(np.complex64))
+        c.seek(0)
+        res = np.genfromtxt(c, dtype=np.complex256)
+        assert_equal(res, tgt.astype(np.complex256))
 
     def test_replace_space(self):
         "Test the 'replace_space' option"
