@@ -584,6 +584,22 @@ def _getconv(dtype):
     else:
         return str
 
+def _atleast_Nd(ndmin, usemask=False):
+    if usemask:
+        from numpy import ma
+        if ndmin == 1:
+            return ma.atleast_1d
+        elif ndmin == 2:
+            return ma.atleast_2d
+        else:
+            return ma.array
+    else:
+        if ndmin == 1:
+            return np.atleast_1d
+        elif ndmin == 2:
+            return lambda x: np.atleast_2d(x).T
+        else:
+            return np.array
 
 
 def loadtxt(fname, dtype=float, comments='#', delimiter=None,
@@ -748,6 +764,10 @@ def loadtxt(fname, dtype=float, comments='#', delimiter=None,
         else:
             return []
 
+    # Check correctness of the values of `ndmin`
+    if not ndmin in [0, 1, 2]:
+        raise ValueError('Illegal value of ndmin keyword: %s' % ndmin)
+
     try:
         # Make sure we're dealing with a proper dtype
         dtype = np.dtype(dtype)
@@ -823,19 +843,14 @@ def loadtxt(fname, dtype=float, comments='#', delimiter=None,
         X.shape = (1, -1)
 
     # Verify that the array has at least dimensions `ndmin`.
-    # Check correctness of the values of `ndmin`
-    if not ndmin in [0, 1, 2]:
-        raise ValueError('Illegal value of ndmin keyword: %s' % ndmin)
     # Tweak the size and shape of the arrays - remove extraneous dimensions
     if X.ndim > ndmin:
         X = np.squeeze(X)
     # and ensure we have the minimum number of dimensions asked for
     # - has to be in this order for the odd case ndmin=1, X.squeeze().ndim=0
     if X.ndim < ndmin:
-        if ndmin == 1:
-            X = np.atleast_1d(X)
-        elif ndmin == 2:
-            X = np.atleast_2d(X).T
+        atleast_Nd = _atleast_Nd(ndmin)
+        X = atleast_Nd(X)
 
     if unpack:
         if len(dtype_types) > 1:
@@ -1090,7 +1105,7 @@ def fromregex(file, regexp, dtype):
 def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
                skiprows=0, skip_header=0, skip_footer=0, converters=None,
                missing='', missing_values=None, filling_values=None,
-               usecols=None, names=None,
+               usecols=None, names=None, ndmin=0,
                excludelist=None, deletechars=None, replace_space='_',
                autostrip=False, case_sensitive=True, defaultfmt="f%i",
                unpack=None, usemask=False, loose=True, invalid_raise=True):
@@ -1160,7 +1175,8 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
         If 'lower', field names are converted to lower case.
     unpack : bool, optional
         If True, the returned array is transposed, so that arguments may be
-        unpacked using ``x, y, z = loadtxt(...)``
+        unpacked using ``x, y, z = genfromtxt(...)``.  When used with a record
+        data-type, arrays are returned for each field.  Default is False.
     usemask : bool, optional
         If True, return a masked array.
         If False, return a regular array.
@@ -1168,6 +1184,11 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
         If True, an exception is raised if an inconsistency is detected in the
         number of columns.
         If False, a warning is emitted and the offending lines are skipped.
+    ndmin : int, optional
+        The returned array will have at least `ndmin` dimensions.
+        Otherwise mono-dimensional axes will be squeezed. 
+        Legal values: 0 (default), 1 or 2.
+        .. versionadded:: 1.6.n
 
     Returns
     -------
@@ -1240,6 +1261,10 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
     if isinstance(missing_values, (unicode, list, tuple)):
         missing_values = asbytes_nested(missing_values)
 
+    # Check correctness of the values of `ndmin`
+    if not ndmin in [0, 1, 2]:
+        raise ValueError('Illegal value of ndmin keyword: %s' % ndmin)
+
     #
     if usemask:
         from numpy.ma import MaskedArray, make_mask_descr
@@ -1292,6 +1317,9 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
     except StopIteration:
         # might want to return empty array instead of raising error.
         raise IOError('End-of-file reached before encountering data.')
+        # compare loadtxt:    # End of lines reached
+        #    first_line = ''
+        #    first_values = []
 
     # Should we take the first values as names ?
     if names is True:
@@ -1705,9 +1733,29 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
     if usemask:
         output = output.view(MaskedArray)
         output._mask = outputmask
+
+    # Multicolumn data are returned with shape (1, N, M), i.e. 
+    # (1, 1, M) for a single row - remove the singleton dimension there
+    if output.ndim == 3 and output.shape[:2] == (1, 1):
+        output.shape = (1, -1)
+
+    # Verify that the array has at least dimensions `ndmin`.
+    # Tweak the size and shape of the arrays - remove extraneous dimensions
+    if output.ndim > ndmin and not usemask:
+        output = np.squeeze(output)
+    # and ensure we have the minimum number of dimensions asked for
+    # - has to be in this order for the odd case ndmin=1, X.squeeze().ndim=0
+    if output.ndim < ndmin:
+        atleast_Nd = _atleast_Nd(ndmin, usemask)
+        output = atleast_Nd(output)
+
     if unpack:
-        return output.squeeze().T
-    return output.squeeze()
+        if len(dtype_flat) > 1:
+            # For structured arrays, return an array for each field.
+            return [output[field] for field in dtype.names]
+        else:
+            return output.T
+    return output
 
 
 
@@ -1763,6 +1811,7 @@ def recfromtxt(fname, **kwargs):
 
     """
     kwargs.update(dtype=kwargs.get('dtype', None))
+    kwargs.update(unpack=False)
     usemask = kwargs.get('usemask', False)
     output = genfromtxt(fname, **kwargs)
     if usemask:
@@ -1789,6 +1838,7 @@ def recfromcsv(fname, **kwargs):
 
     """
     case_sensitive = kwargs.get('case_sensitive', "lower") or "lower"
+    kwargs.update(unpack=False)
     names = kwargs.get('names', True)
     if names is None:
         names = True

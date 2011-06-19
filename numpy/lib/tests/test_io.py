@@ -1004,6 +1004,15 @@ M   33  21.99
                            dtype=[('A', np.float), ('B', np.float)])
         assert_equal(test, control)
         assert_equal(test.mask, control.mask)
+        data = StringIO('A,B\n2,N/A')
+        test = np.mafromtxt(data, **kwargs)
+        assert_equal(test, control[1])
+        assert_equal(test.mask, control[1].mask)
+        data.seek(0)
+        test = np.mafromtxt(data, ndmin=2, **kwargs)
+        control = ma.atleast_2d(control[1])
+        assert_equal(test, control)
+        assert_equal(test.mask, control.mask)
 
 
     def test_user_missing_values(self):
@@ -1413,6 +1422,61 @@ M   33  21.99
 
         res = np.genfromtxt(count())
         assert_array_equal(res, np.arange(10))
+
+    def test_structure_unpack(self):
+        txt = StringIO(asbytes("M 21 72\nF 35 58"))
+        dt = { 'names': ('a', 'b', 'c'), 'formats': ('|S1', '<i4', '<f4')}
+        a, b, c = np.genfromtxt(txt, dtype=dt, unpack=True)
+        txt.seek(0)
+        # recfromtxt should override unpack=True
+        rec = np.recfromtxt(txt, dtype=dt, unpack=True)
+        assert_(a.dtype.str == '|S1')
+        assert_(b.dtype.str == '<i4')
+        assert_(c.dtype.str == '<f4')
+        assert_array_equal(a, np.array([asbytes('M'), asbytes('F')]))
+        assert_array_equal(b, np.array([21, 35]))
+        assert_array_equal(c, np.array([ 72.,  58.]))
+        assert_array_equal(a, rec['a'])
+        assert_array_equal(b, rec['b'])
+        assert_array_equal(c, rec['c'])
+
+    def test_ndmin_keyword(self):
+        c = StringIO()
+        c.write(asbytes('1,2,3\n4,5,6'))
+        c.seek(0)
+        assert_raises(ValueError, np.genfromtxt, c, ndmin=3)
+        c.seek(0)
+        assert_raises(ValueError, np.genfromtxt, c, ndmin=1.5)
+        c.seek(0)
+        x = np.genfromtxt(c, dtype=int, delimiter=',', ndmin=1)
+        a = np.array([[1, 2, 3], [4, 5, 6]])
+        assert_array_equal(x, a)
+        d = StringIO()
+        d.write(asbytes('0,1,2'))
+        d.seek(0)
+        x = np.genfromtxt(d, dtype=int, delimiter=',', ndmin=2)
+        assert_(x.shape == (1, 3))
+        d.seek(0)
+        x = np.genfromtxt(d, dtype=int, delimiter=',', ndmin=1)
+        assert_(x.shape == (3,))
+        d.seek(0)
+        x = np.genfromtxt(d, dtype=int, delimiter=',', ndmin=0)
+        assert_(x.shape == (3,))
+        e = StringIO()
+        e.write(asbytes('0\n1\n2'))
+        e.seek(0)
+        x = np.genfromtxt(e, dtype=int, delimiter=',', ndmin=2)
+        assert_(x.shape == (3, 1))
+        e.seek(0)
+        x = np.genfromtxt(e, dtype=int, delimiter=',', ndmin=1)
+        assert_(x.shape == (3,))
+        e.seek(0)
+        x = np.genfromtxt(e, dtype=int, delimiter=',', ndmin=0)
+        assert_(x.shape == (3,))
+        f = StringIO()
+        # do not work presently because genfromtxt refuses empty files
+        # assert_(np.genfromtxt(f, ndmin=2).shape == (0, 1,))
+        # assert_(np.genfromtxt(f, ndmin=1).shape == (0,))
 
 
 def test_gzip_load():
