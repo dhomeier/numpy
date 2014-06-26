@@ -2,6 +2,9 @@ from __future__ import division, absolute_import, print_function
 
 import sys
 import gzip
+import bz2
+if sys.version_info[:2] > (3,2):
+    import lzma
 import os
 import threading
 import shutil
@@ -1608,8 +1611,54 @@ M   33  21.99
     def test_gft_using_filename(self):
         # Test that we can load data from a filename as well as a file object
         wanted = np.arange(6).reshape((2, 3))
-        if sys.version_info[0] >= 3:
-            # python 3k is known to fail for '\r'
+        linesep = ('\n', '\r\n', '\r')
+
+        for sep in linesep:
+            data = '0 1 2' + sep + '3 4 5'
+            f, name = mkstemp()
+            # We can't use NamedTemporaryFile on windows, because we cannot
+            # reopen the file.
+            try:
+                os.write(f, asbytes(data))
+                assert_array_equal(np.genfromtxt(name), wanted)
+            finally:
+                os.close(f)
+                os.unlink(name)
+
+    def test_gft_from_gzip(self):
+        # Test that we can load data from a gzipped file
+        wanted = np.arange(6).reshape((2, 3))
+        if sys.version_info[:2] < (3,3):
+            # universal newline conversion does not work for unknown reasons
+            # in 2.7, not supported (mode='rt') in 3.2
+            linesep = ('\n', '\r\n')
+        else:
+            linesep = ('\n', '\r\n', '\r')
+
+        for sep in linesep:
+            data = '0 1 2' + sep + '3 4 5'
+            s = BytesIO()
+            g = gzip.GzipFile(fileobj=s, mode='w')
+            g.write(asbytes(data))
+            g.close()
+            s.seek(0)
+
+            f, name = mkstemp(suffix='.gz')
+            # We can't use NamedTemporaryFile on windows, because we cannot
+            # reopen the file.
+            try:
+                os.write(f, s.read())
+                s.close()
+                assert_array_equal(np.genfromtxt(name), wanted)
+            finally:
+                os.close(f)
+                os.unlink(name)
+
+    def test_gft_from_bzip2(self):
+        # Test that we can load data from a bzip2 file
+        wanted = np.arange(6).reshape((2, 3))
+        if sys.version_info[0] == 3 and sys.version_info[1] < 3:
+            # universal newline conversion not supported (mode='rt') in 3.2
             linesep = ('\n', '\r\n')
         else:
             linesep = ('\n', '\r\n', '\r')
@@ -1621,6 +1670,34 @@ M   33  21.99
             # reopen the file.
             try:
                 os.write(f, asbytes(data))
+                os.system('bzip2 %s' % name)
+                assert_array_equal(np.genfromtxt(name+'.bz2'), wanted)
+            finally:
+                os.system('bzip2 -d %s.bz2' % name)
+                os.close(f)
+                os.unlink(name)
+
+    @np.testing.dec.knownfailureif(sys.version_info[:2] < (3,3),
+                                   "LZMA not supported in Python<3.3")
+    def test_gft_from_xz(self):
+        # Test that we can load data from an xz file
+        wanted = np.arange(6).reshape((2, 3))
+        linesep = ('\n', '\r\n', '\r')
+
+        for sep in linesep:
+            data = '0 1 2' + sep + '3 4 5'
+            s = BytesIO()
+            g = lzma.LZMAFile(s, mode='w')
+            g.write(asbytes(data))
+            g.close()
+            s.seek(0)
+
+            f, name = mkstemp(suffix='.xz')
+            # We can't use NamedTemporaryFile on windows, because we cannot
+            # reopen the file.
+            try:
+                os.write(f, s.read())
+                s.close()
                 assert_array_equal(np.genfromtxt(name), wanted)
             finally:
                 os.close(f)

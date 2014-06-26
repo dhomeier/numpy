@@ -53,8 +53,8 @@ class _FileOpeners(object):
     `_FileOpeners` contains a dictionary that holds one method for each
     supported file format. Attribute lookup is implemented in such a way that
     an instance of `_FileOpeners` itself can be indexed with the keys of that
-    dictionary. Currently uncompressed files as well as files
-    compressed with ``gzip`` or ``bz2`` compression are supported.
+    dictionary. Currently uncompressed files as well as files compressed with
+    ``gzip``, ``bz2`` or (from Python3.3 on) ``xz`` compression are supported.
 
     Notes
     -----
@@ -64,7 +64,7 @@ class _FileOpeners(object):
     Examples
     --------
     >>> np.lib._datasource._file_openers.keys()
-    [None, '.bz2', '.gz']
+    [None, '.bz2', '.xz', '.gz']
     >>> np.lib._datasource._file_openers['.gz'] is gzip.open
     True
 
@@ -76,8 +76,16 @@ class _FileOpeners(object):
         if self._loaded:
             return
         try:
+            import lzma
+            self._file_openers[".xz"] = lzma.open
+        except ImportError:
+            pass
+        try:
             import bz2
-            self._file_openers[".bz2"] = bz2.BZ2File
+            if sys.version_info[:2] < (3,3):
+                self._file_openers[".bz2"] = bz2.BZ2File
+            else:
+                self._file_openers[".bz2"] = bz2.open
         except ImportError:
             pass
         try:

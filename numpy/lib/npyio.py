@@ -1191,7 +1191,7 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
     ----------
     fname : file or str
         File, filename, or generator to read.  If the filename extension is
-        `.gz` or `.bz2`, the file is first decompressed. Note that
+        `.gz`, `.bz2` or `.xz`, the file is first decompressed. Note that
         generators must return byte strings in Python 3k.
     dtype : dtype, optional
         Data type of the resulting array.
@@ -1354,9 +1354,11 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
     try:
         if isinstance(fname, basestring):
             if sys.version_info[0] == 2:
-                fhd = iter(np.lib._datasource.open(fname, 'rbU'))
+                fhd = iter(np.lib._datasource.open(fname, 'rU'))
+            elif sys.version_info[1] < 3:
+                fhd = iter(np.lib._datasource.open(fname, 'r'))
             else:
-                fhd = iter(np.lib._datasource.open(fname, 'rb'))
+                fhd = iter(np.lib._datasource.open(fname, 'rt'))
             own_fhd = True
         else:
             fhd = iter(fname)
@@ -1391,7 +1393,7 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
             if names is True:
                 if comments in first_line:
                     first_line = asbytes('').join(first_line.split(comments)[1:])
-            first_values = split_line(first_line)
+            first_values = split_line(asbytes(first_line))
     except StopIteration:
         # return an empty array if the datafile is empty
         first_line = asbytes('')
@@ -1611,7 +1613,7 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
 
     # Parse each line
     for (i, line) in enumerate(itertools.chain([first_line, ], fhd)):
-        values = split_line(line)
+        values = split_line(asbytes(line))
         nbvalues = len(values)
         # Skip an empty line
         if nbvalues == 0:
