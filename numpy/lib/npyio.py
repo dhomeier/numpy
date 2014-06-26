@@ -1251,7 +1251,7 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
         If 'lower', field names are converted to lower case.
     unpack : bool, optional
         If True, the returned array is transposed, so that arguments may be
-        unpacked using ``x, y, z = loadtxt(...)``
+        unpacked using ``x, y, z = genfromtxt(...)``
     usemask : bool, optional
         If True, return a masked array.
         If False, return a regular array.
@@ -1804,8 +1804,13 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
         output = output.view(MaskedArray)
         output._mask = outputmask
     if unpack:
-        return output.squeeze().T
-    return output.squeeze()
+        if names is not None and len(names) > 1:
+            # For structured arrays, return an array for each field.
+            return [output[field].squeeze() for field in names]
+        else:
+            return output.squeeze().T
+    else:
+        return output.squeeze()
 
 
 def ndfromtxt(fname, **kwargs):
