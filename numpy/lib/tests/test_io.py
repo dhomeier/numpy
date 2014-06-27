@@ -1629,8 +1629,8 @@ M   33  21.99
         # Test that we can load data from a gzipped file
         wanted = np.arange(6).reshape((2, 3))
         if sys.version_info[:2] < (3,3):
-            # universal newline conversion does not work for unknown reasons
-            # in 2.7, not supported (mode='rt') in 3.2
+            # universal newline conversion does not work (still issue5184?)
+            # in 2.7, IOError in 2.6, not supported (mode='rt') in 3.2
             linesep = ('\n', '\r\n')
         else:
             linesep = ('\n', '\r\n', '\r')

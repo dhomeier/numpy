@@ -497,8 +497,11 @@ class DataSource (object):
         found = self._findfile(path)
         if found:
             _fname, ext = self._splitzipext(found)
-            if ext == 'bz2':
-                mode.replace("+", "")
+            if ext == '.bz2':
+                mode = mode.replace("+", "")
+            # gzip universal newline broken in 2.6 (and not working in 2.7...)
+            elif ext == '.gz' and sys.version_info[:3] < (2,7,4):
+                mode = mode.replace("U", "")
             return _file_openers[ext](found, mode=mode)
         else:
             raise IOError("%s not found." % path)
